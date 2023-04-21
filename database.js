@@ -41,7 +41,8 @@ export default fp(async function (fastify, opts) {
     '  CONSTRAINT items_pki ' +
     '  PRIMARY KEY ' +
     '  AUTOINCREMENT, ' +
-    'name TEXT NOT NULL ' +
+    'name TEXT NOT NULL, ' +
+    'status TEXT DEFAULT \'unpublished\' NOT NULL ' +
     ')'
   )
 
