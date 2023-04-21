@@ -1,7 +1,10 @@
 import fp from 'fastify-plugin'
 
 export default fp(async function (fastify, opts) {
-  fastify.decorate('exampleDecorator', () => {
-    return 'decorated'
+  const localOpts = {
+
+  }
+
+  const options = Object.create({}, localOpts, opts)
   })
-}, { fastify: '^4.x' })
+}, { name: 'fastify-cms', fastify: '^4.x' })
