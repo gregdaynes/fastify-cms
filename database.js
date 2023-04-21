@@ -14,6 +14,7 @@ export default fp(async function (fastify, opts) {
     '  PRIMARY KEY ' +
     '  AUTOINCREMENT, ' +
     'title TEXT NOT NULL, ' +
+    'slug TEXT NOT NULL, ' +
     'content TEXT NOT NULL, ' +
     'path TEXT NOT NULL, ' +
     'status TEXT DEFAULT \'unpublished\' NOT NULL, ' +
