@@ -18,7 +18,7 @@ export default fp(async function (fastify, opts) {
     'content TEXT NOT NULL, ' +
     'path TEXT, ' +
     'status TEXT DEFAULT \'unpublished\' NOT NULL, ' +
-    'category_id INTEGER NOT NULL ' +
+    'id_category INTEGER NOT NULL ' +
     '  CONSTRAINT items_categories_id_fk ' +
     '  REFERENCES categories ' +
     ')'
