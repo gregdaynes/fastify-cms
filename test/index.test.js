@@ -10,5 +10,5 @@ test('should register the correct decorator', async t => {
 
   await app.ready()
 
-  t.same(app.exampleDecorator(), 'decorated')
+  t.ok(app['fastify-cms-database'])
 })

@@ -8,7 +8,7 @@
     "test": "test"
   },
   "scripts": {
-    "dev": "fastify start -l debug -w -P -p 3000 -a 0.0.0.0 index.js",
+    "dev": "fastify start -l debug -w -P -p 3000 -a 0.0.0.0 --ignore-watch='node_modules .git .db' index.js",
     "example": "node example/server.mjs",
     "test": "npm run lint && npm run unit && npm run test:typescript",
     "lint": "standard && npm run lint:typescript",
@@ -44,5 +44,8 @@
   },
   "tsd": {
     "directory": "test"
+  },
+  "dependencies": {
+    "better-sqlite3": "^8.3.0"
   }
 }
