@@ -1,6 +1,5 @@
-import { join } from 'node:path'
-import Database from 'better-sqlite3'
 import fp from 'fastify-plugin'
+import { join } from 'desm'
 
 export default fp(async function (fastify, opts) {
   const localOpts = {
@@ -10,57 +9,5 @@ export default fp(async function (fastify, opts) {
   const options = Object.create({}, localOpts, opts)
 
   // initialize database
-  const db = new Database(join(process.cwd(), 'cms.db'), options)
-  fastify.decorate('fastify-cms-database', db)
-
-  // migration: items
-  db.exec('CREATE TABLE IF NOT EXISTS items (' +
-    'id INTEGER' +
-    '  CONSTRAINT items_pki ' +
-    '  PRIMARY KEY ' +
-    '  AUTOINCREMENT, ' +
-    'title TEXT NOT NULL, ' +
-    'content TEXT NOT NULL, ' +
-    'path TEXT NOT NULL, ' +
-    'status TEXT DEFAULT \'unpublished\' NOT NULL, ' +
-    'category_id INTEGER NOT NULL ' +
-    '  CONSTRAINT items_categories_id_fk ' +
-    '  REFERENCES categories ' +
-    ')'
-  )
-
-  // migration: categories
-  db.exec('CREATE TABLE IF NOT EXISTS categories (' +
-    'id INTEGER' +
-    '  CONSTRAINT items_pki ' +
-    '  PRIMARY KEY ' +
-    '  AUTOINCREMENT, ' +
-    'name TEXT NOT NULL, ' +
-    'slug TEXT NOT NULL ' +
-    ')'
-  )
-
-  // migration: tags
-  db.exec('CREATE TABLE IF NOT EXISTS tags (' +
-    'id INTEGER' +
-    '  CONSTRAINT items_pki ' +
-    '  PRIMARY KEY ' +
-    '  AUTOINCREMENT, ' +
-    'name TEXT NOT NULL ' +
-    ')'
-  )
-
-  // migration: item_tags
-  db.exec('CREATE TABLE IF NOT EXISTS item_tags (' +
-    'id INTEGER NOT NULL ' +
-    '  CONSTRAINT item_tags ' +
-    '  PRIMARY KEY AUTOINCREMENT, ' +
-    'id_item INTEGER NOT NULL ' +
-    '  CONSTRAINT item_tags_items_id_fk ' +
-    '  REFERENCES items, ' +
-    'id_tag INTEGER NOT NULL ' +
-    '  CONSTRAINT item_tags_tags_id_fk ' +
-    '  REFERENCES tags ' +
-    ')'
-  )
+  fastify.register(import(join(import.meta.url, 'database.js')), options)
 }, { name: 'fastify-cms', fastify: '^4.x' })
