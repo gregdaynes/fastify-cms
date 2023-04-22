@@ -1,3 +1,12 @@
+import S from 'fluent-json-schema'
+
+export const Category = S.object()
+  .id('#category')
+  .prop('id', S.number())
+  .prop('name', S.string())
+  .prop('slug', S.string())
+  .prop('status', S.string())
+
 export const autoPrefix = '/categories'
 
 export default async function (fastify, opts) {
@@ -5,12 +14,23 @@ export default async function (fastify, opts) {
   fastify.route({
     method: 'POST',
     url: '/',
+    schema: {
+      body: S.object()
+        .prop('name', S.string().required())
+        .prop('slug', S.string().required()),
+      response: {
+        200: Category
+      }
+    },
     handler: async (request, reply) => {
       const db = request.server['fastify-cms-database']
       const { name, slug } = request.body
 
       const stmt = db.prepare('INSERT INTO categories (name, slug) VALUES (?, ?)')
-      const info = stmt.run(name, slug)
+      const { lastInsertRowid } = stmt.run(name, slug)
+
+      const select = db.prepare('SELECT * FROM categories WHERE id = ? LIMIT 1')
+      const info = select.get(lastInsertRowid)
 
       return info
     }
@@ -20,6 +40,13 @@ export default async function (fastify, opts) {
   fastify.route({
     method: 'GET',
     url: '/:id',
+    schema: {
+      params: S.object()
+        .prop('id', S.number().required()),
+      response: {
+        200: Category
+      }
+    },
     handler: async (request, reply) => {
       const db = request.server['fastify-cms-database']
       const { id } = request.params
@@ -35,13 +62,26 @@ export default async function (fastify, opts) {
   fastify.route({
     method: 'PUT',
     url: '/:id',
+    schema: {
+      params: S.object()
+        .prop('id', S.number().required()),
+      body: S.object()
+        .prop('name', S.string().required())
+        .prop('slug', S.string().required()),
+      response: {
+        200: Category
+      }
+    },
     handler: async (request, reply) => {
       const db = request.server['fastify-cms-database']
       const { id } = request.params
       const { name, slug } = request.body
 
       const stmt = db.prepare('UPDATE categories SET name = ?, slug = ? WHERE id = ?')
-      const info = stmt.run(name, slug, id)
+      stmt.run(name, slug, id)
+
+      const select = db.prepare('SELECT * FROM categories WHERE id = ? LIMIT 1')
+      const info = select.get(id)
 
       return info
     }
@@ -51,6 +91,17 @@ export default async function (fastify, opts) {
   fastify.route({
     method: 'GET',
     url: '/',
+    schema: {
+      response: {
+        200: S.array().items(
+          S.object()
+            .prop('id', S.number().required())
+            .prop('name', S.string().required())
+            .prop('slug', S.string().required())
+            .prop('status', S.string().required())
+        )
+      }
+    },
     handler: async (request, reply) => {
       const db = request.server['fastify-cms-database']
 
@@ -65,14 +116,19 @@ export default async function (fastify, opts) {
   fastify.route({
     method: 'DELETE',
     url: '/:id',
+    schema: {
+      params: S.object()
+        .prop('id', S.number().required()),
+      response: {
+        200: S.null()
+      }
+    },
     handler: async (request, reply) => {
       const db = request.server['fastify-cms-database']
       const { id } = request.params
 
       const stmt = db.prepare('UPDATE categories SET status = \'unpublished\' WHERE id = ?')
-      const info = stmt.run(id)
-
-      return info
+      stmt.run(id)
     }
   })
 }
