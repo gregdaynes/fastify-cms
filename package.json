@@ -24,6 +24,7 @@
   "devDependencies": {
     "@commitlint/cli": "^17.6.1",
     "@commitlint/config-conventional": "^17.6.1",
+    "@fastify/routes": "^5.1.0",
     "@typescript-eslint/eslint-plugin": "^5.59.0",
     "close-with-grace": "^1.2.0",
     "dotenv": "^16.0.3",
