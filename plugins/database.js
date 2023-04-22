@@ -7,8 +7,7 @@ export default fp(async function (fastify, opts) {
   const db = new Database(join(process.cwd(), 'cms.db'), opts)
   fastify.decorate('fastify-cms-database', db)
 
-  // migration: items
-  db.exec('CREATE TABLE IF NOT EXISTS items (' +
+  db.exec('CREATE TABLE IF NOT EXISTS documents (' +
     'id INTEGER' +
     '  CONSTRAINT items_pki ' +
     '  PRIMARY KEY ' +
@@ -23,4 +22,5 @@ export default fp(async function (fastify, opts) {
     '  REFERENCES categories ' +
     ')'
   )
+  // migration: documents
 }, { name: 'fastify-cms-db' })
