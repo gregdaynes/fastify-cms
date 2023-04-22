@@ -23,41 +23,4 @@ export default fp(async function (fastify, opts) {
     '  REFERENCES categories ' +
     ')'
   )
-
-  // migration: categories
-  db.exec('CREATE TABLE IF NOT EXISTS categories (' +
-    'id INTEGER' +
-    '  CONSTRAINT items_pki ' +
-    '  PRIMARY KEY ' +
-    '  AUTOINCREMENT, ' +
-    'name TEXT NOT NULL, ' +
-    'slug TEXT NOT NULL, ' +
-    'status TEXT DEFAULT \'unpublished\' NOT NULL ' +
-    ')'
-  )
-
-  // migration: tags
-  db.exec('CREATE TABLE IF NOT EXISTS tags (' +
-    'id INTEGER' +
-    '  CONSTRAINT items_pki ' +
-    '  PRIMARY KEY ' +
-    '  AUTOINCREMENT, ' +
-    'name TEXT NOT NULL, ' +
-    'status TEXT DEFAULT \'unpublished\' NOT NULL ' +
-    ')'
-  )
-
-  // migration: item_tags
-  db.exec('CREATE TABLE IF NOT EXISTS item_tags (' +
-    'id INTEGER NOT NULL ' +
-    '  CONSTRAINT item_tags ' +
-    '  PRIMARY KEY AUTOINCREMENT, ' +
-    'id_item INTEGER NOT NULL ' +
-    '  CONSTRAINT item_tags_items_id_fk ' +
-    '  REFERENCES items, ' +
-    'id_tag INTEGER NOT NULL ' +
-    '  CONSTRAINT item_tags_tags_id_fk ' +
-    '  REFERENCES tags ' +
-    ')'
-  )
 }, { name: 'fastify-cms-db' })
