@@ -1,14 +1,14 @@
 import S from 'fluent-json-schema'
 
 export const Item = S.object()
-  .id('#item')
+  .id('#document')
   .prop('id', S.number())
   .prop('title', S.string())
   .prop('slug', S.string())
   .prop('content', S.string())
   .prop('idCategory', S.number())
 
-export const autoPrefix = '/items'
+export const autoPrefix = '/documents'
 
 export default async function (fastify, opts) {
   // create item
@@ -29,10 +29,10 @@ export default async function (fastify, opts) {
       const db = request.server['fastify-cms-database']
       const { title, slug, content, idCategory } = request.body
 
-      const stmt = db.prepare('INSERT INTO items (title, slug, content, id_category) VALUES (?, ?, ?, ?)')
+      const stmt = db.prepare('INSERT INTO documents (title, slug, content, id_category) VALUES (?, ?, ?, ?)')
       const { lastInsertRowid } = stmt.run(title, slug, content, idCategory)
 
-      const select = db.prepare('SELECT * FROM items WHERE id = ? LIMIT 1')
+      const select = db.prepare('SELECT * FROM documents WHERE id = ? LIMIT 1')
       const info = select.get(lastInsertRowid)
 
       return info
@@ -54,7 +54,7 @@ export default async function (fastify, opts) {
       const db = request.server['fastify-cms-database']
       const { id } = request.params
 
-      const stmt = db.prepare('SELECT * FROM items WHERE id = ?')
+      const stmt = db.prepare('SELECT * FROM documents WHERE id = ?')
       const info = stmt.get(id)
       info.idCategory = info.id_category
 
@@ -83,10 +83,10 @@ export default async function (fastify, opts) {
       const { id } = request.params
       const { title, slug, content, idCategory } = request.body
 
-      const stmt = db.prepare('UPDATE items SET title = ?, slug = ?, content = ?, id_category = ? WHERE id = ?')
+      const stmt = db.prepare('UPDATE documents SET title = ?, slug = ?, content = ?, id_category = ? WHERE id = ?')
       stmt.run(title, slug, content, idCategory, id)
 
-      const select = db.prepare('SELECT * FROM items WHERE id = ? LIMIT 1')
+      const select = db.prepare('SELECT * FROM documents WHERE id = ? LIMIT 1')
       const info = select.get(id)
 
       return info
@@ -140,7 +140,7 @@ export default async function (fastify, opts) {
       const db = request.server['fastify-cms-database']
       const { id } = request.params
 
-      const stmt = db.prepare('UPDATE items SET status = \'unpublished\' WHERE id = ?')
+      const stmt = db.prepare('UPDATE documents SET status = \'unpublished\' WHERE id = ?')
       stmt.run(id)
     }
   })
