@@ -7,20 +7,19 @@ export default fp(async function (fastify, opts) {
   const db = new Database(join(process.cwd(), 'cms.db'), opts)
   fastify.decorate('fastify-cms-database', db)
 
-  db.exec('CREATE TABLE IF NOT EXISTS documents (' +
-    'id INTEGER' +
-    '  CONSTRAINT items_pki ' +
-    '  PRIMARY KEY ' +
-    '  AUTOINCREMENT, ' +
-    'title TEXT NOT NULL, ' +
-    'slug TEXT NOT NULL, ' +
-    'content TEXT NOT NULL, ' +
-    'path TEXT, ' +
-    'status TEXT DEFAULT \'unpublished\' NOT NULL, ' +
-    'id_category INTEGER NOT NULL ' +
-    '  CONSTRAINT items_categories_id_fk ' +
-    '  REFERENCES categories ' +
-    ')'
-  )
   // migration: documents
+  db.exec(`
+     CREATE TABLE IF NOT EXISTS documents
+     (
+         id         TEXT NOT NULL,
+         metadata   JSON DEFAULT '{}' NOT NULL,
+         data       JSON DEFAULT '{}' NOT NULL,
+         deleted_at TEXT,
+         
+         CONSTRAINT documents_pk
+             PRIMARY KEY (id)
+     )
+         
+     without rowid;
+ `)
 }, { name: 'fastify-cms-db' })
