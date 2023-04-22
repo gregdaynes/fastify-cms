@@ -16,4 +16,11 @@ export default fp(async function (fastify, opts) {
     dir: join(import.meta.url, 'plugins'),
     options
   })
+
+  // This loads all plugins defined in routes
+  // define your routes in one of these
+  await fastify.register(AutoLoad, {
+    dir: join(import.meta.url, 'routes'),
+    options
+  })
 }, { name: 'fastify-cms', fastify: '^4.x' })
