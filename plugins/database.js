@@ -1,11 +1,15 @@
 import { join } from 'node:path'
 import Database from 'better-sqlite3'
 import fp from 'fastify-plugin'
+import { monotonicFactory as ulid } from 'ulidx'
 
 export default fp(async function (fastify, opts) {
   // initialize database
   const db = new Database(join(process.cwd(), 'cms.db'), opts)
+
   fastify.decorate('fastify-cms-database', db)
+
+  fastify.decorate('fastify-cms-ulid', ulid())
 
   // migration: documents
   db.exec(`
