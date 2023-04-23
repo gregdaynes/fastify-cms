@@ -26,4 +26,7 @@ export default fp(async function (fastify, opts) {
          
      without rowid;
  `)
-}, { name: 'fastify-cms-db' })
+}, {
+  name: 'fastify-cms-db',
+  dependencies: []
+})
