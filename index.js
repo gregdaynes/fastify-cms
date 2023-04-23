@@ -1,6 +1,7 @@
 import fp from 'fastify-plugin'
 import AutoLoad from '@fastify/autoload'
 import { join } from 'desm'
+import _ from 'lodash'
 
 export default fp(async function (fastify, opts) {
   fastify.register(import('@fastify/sensible'))
@@ -16,7 +17,9 @@ export default fp(async function (fastify, opts) {
   // through your application
   await fastify.register(AutoLoad, {
     dir: join(import.meta.url, 'plugins'),
-    options
+    options: {
+      ..._.omit(options, ['prefix'])
+    }
   })
 
   // This loads all plugins defined in routes

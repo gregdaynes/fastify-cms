@@ -14,6 +14,7 @@ export const Document = S.object()
     .prop('slug', S.string().required())
     .prop('description', S.string().required())
     .prop('keywords', S.array().items(S.anyOf([S.null(), S.string()])).required().default([]))
+    .prop('url', S.string())
     .prop('updatedAt', S.string().format('date-time'))
   )
 
@@ -57,6 +58,8 @@ export default async function (fastify, opts) {
 
       const stmt = db.prepare('INSERT INTO documents (id, metadata, data) VALUES (?, ?, ?)')
       stmt.run(id, JSON.stringify(metadata), JSON.stringify(data))
+
+      request.server['fastify-cms-addPage'](id, metadata.url)
 
       return fetchDocumentById(id)
     }
