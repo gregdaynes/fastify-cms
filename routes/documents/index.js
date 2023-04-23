@@ -1,12 +1,32 @@
 import S from 'fluent-json-schema'
+import slugify from 'slugify'
+import _ from 'lodash'
 
-export const Item = S.object()
+export const Document = S.object()
   .id('#document')
-  .prop('id', S.number())
-  .prop('title', S.string())
-  .prop('slug', S.string())
-  .prop('content', S.string())
-  .prop('idCategory', S.number())
+  .title('Document')
+  .description('document with metadata and data')
+
+  .definition('metadata', S.object()
+    .id('#metadata')
+    .prop('name', S.string().required())
+    .prop('title', S.string().required())
+    .prop('slug', S.string().required())
+    .prop('description', S.string().required())
+    .prop('keywords', S.array().items(S.anyOf([S.null(), S.string()])).required().default([]))
+    .prop('updatedAt', S.string().format('date-time'))
+  )
+
+  .definition('data', S.object()
+    .id('#data')
+    .prop('contentType', S.string().required())
+    .prop('content', S.string().required())
+  )
+
+  .prop('id', S.string().pattern(/[0-7][0-9A-HJKMNP-TV-Z]{25}/gm).required())
+  .prop('metadata', S.ref('#metadata').required())
+  .prop('data', S.ref('#data').required())
+  .prop('deletedAt', S.string().format('date-time'))
 
 export const autoPrefix = '/documents'
 
@@ -16,26 +36,29 @@ export default async function (fastify, opts) {
     method: 'POST',
     url: '/',
     schema: {
-      body: S.object()
-        .prop('title', S.string().required())
-        .prop('slug', S.string().required())
-        .prop('content', S.string().required())
-        .prop('idCategory', S.number().required()),
+      body: Document
+        .only([
+          'metadata.name',
+          'metadata.title',
+          'data'
+        ]),
       response: {
-        200: Item
+        200: Document
+          .without(['deletedAt'])
       }
     },
     handler: async (request, reply) => {
       const db = request.server['fastify-cms-database']
-      const { title, slug, content, idCategory } = request.body
 
-      const stmt = db.prepare('INSERT INTO documents (title, slug, content, id_category) VALUES (?, ?, ?, ?)')
-      const { lastInsertRowid } = stmt.run(title, slug, content, idCategory)
+      const id = fastify['fastify-cms-ulid']()
+      const { metadata, data } = request.body
+      metadata.slug = slugify(metadata.title)
+      metadata.updatedAt = now()
 
-      const select = db.prepare('SELECT * FROM documents WHERE id = ? LIMIT 1')
-      const info = select.get(lastInsertRowid)
+      const stmt = db.prepare('INSERT INTO documents (id, metadata, data) VALUES (?, ?, ?)')
+      stmt.run(id, JSON.stringify(metadata), JSON.stringify(data))
 
-      return info
+      return fetchDocumentById(id)
     }
   })
 
@@ -44,21 +67,19 @@ export default async function (fastify, opts) {
     method: 'GET',
     url: '/:id',
     schema: {
-      params: S.object()
-        .prop('id', S.number().required()),
+      params: Document
+        .only(['id']),
       response: {
-        200: Item
+        200: Document
       }
     },
     handler: async (request, reply) => {
-      const db = request.server['fastify-cms-database']
       const { id } = request.params
 
-      const stmt = db.prepare('SELECT * FROM documents WHERE id = ?')
-      const info = stmt.get(id)
-      info.idCategory = info.id_category
+      const existingDocument = fetchDocumentById(id)
+      if (!existingDocument) return reply.notFound()
 
-      return info
+      return existingDocument
     }
   })
 
@@ -67,29 +88,32 @@ export default async function (fastify, opts) {
     method: 'PUT',
     url: '/:id',
     schema: {
-      params: S.object()
-        .prop('id', S.number().required()),
-      body: S.object()
-        .prop('title', S.string().required())
-        .prop('slug', S.string().required())
-        .prop('content', S.string().required())
-        .prop('idCategory', S.number().required()),
+      params: Document
+        .only(['id']),
+      body: Document
+        .only([
+          'metadata.name',
+          'metadata.title',
+          'data'
+        ]),
       response: {
-        200: Item
+        200: Document
       }
     },
     handler: async (request, reply) => {
       const db = request.server['fastify-cms-database']
       const { id } = request.params
-      const { title, slug, content, idCategory } = request.body
 
-      const stmt = db.prepare('UPDATE documents SET title = ?, slug = ?, content = ?, id_category = ? WHERE id = ?')
-      stmt.run(title, slug, content, idCategory, id)
+      const existingDocument = fetchDocumentById(id)
+      if (!existingDocument) return reply.notFound()
 
-      const select = db.prepare('SELECT * FROM documents WHERE id = ? LIMIT 1')
-      const info = select.get(id)
+      const updatedDocument = _.merge(existingDocument, request.body)
+      updatedDocument.metadata.updatedAt = now()
 
-      return info
+      const stmt = db.prepare('UPDATE documents SET metadata = ?, data = ? WHERE id = ?')
+      stmt.run(JSON.stringify(updatedDocument.metadata), JSON.stringify(updatedDocument.data), updatedDocument.id)
+
+      return fetchDocumentById(id)
     }
   })
 
@@ -100,28 +124,17 @@ export default async function (fastify, opts) {
     schema: {
       response: {
         200: S.array().items(
-          S.object()
-            .prop('title', S.string().required())
-            .prop('slug', S.string().required())
-            .prop('content', S.string().required())
-            .prop('idCategory', S.number().required())
+          Document
         )
       }
     },
     handler: async (request, reply) => {
       const db = request.server['fastify-cms-database']
 
-      const stmt = db.prepare('SELECT * FROM items')
-      const info = stmt.all()
+      const stmt = db.prepare('SELECT * FROM documents WHERE deleted_at IS NULL')
+      const documents = stmt.all()
 
-      const cleanedInfo = info.map(item => {
-        return {
-          ...item,
-          idCategory: item.id_category
-        }
-      })
-
-      return cleanedInfo
+      return documents.map(document => parseDocument(document))
     }
   })
 
@@ -130,8 +143,8 @@ export default async function (fastify, opts) {
     method: 'DELETE',
     url: '/:id',
     schema: {
-      params: S.object()
-        .prop('id', S.number().required()),
+      params: Document
+        .only(['id']),
       response: {
         200: S.null()
       }
@@ -140,8 +153,36 @@ export default async function (fastify, opts) {
       const db = request.server['fastify-cms-database']
       const { id } = request.params
 
-      const stmt = db.prepare('UPDATE documents SET status = \'unpublished\' WHERE id = ?')
-      stmt.run(id)
+      const timestamp = now()
+
+      const existingDocument = fetchDocumentById(id)
+      if (!existingDocument) return reply.notFound()
+
+      const { metadata } = _.merge(existingDocument, { metadata: { updatedAt: timestamp } })
+
+      const stmt = db.prepare('UPDATE documents SET deleted_at = ? WHERE id = ?')
+      console.log({ metadata, timestamp, id })
+      stmt.run(timestamp, id)
     }
   })
+
+  function fetchDocumentById (id, includeDeleted = false) {
+    const db = fastify['fastify-cms-database']
+    const data = db.prepare('SELECT * FROM documents WHERE id = ? AND deleted_at IS NULL LIMIT 1').get(id)
+    if (!data) return
+
+    return parseDocument(data)
+  }
+
+  function parseDocument (document) {
+    return {
+      ...document,
+      metadata: JSON.parse(document.metadata),
+      data: JSON.parse(document.data)
+    }
+  }
+
+  function now () {
+    return new Date().toISOString()
+  }
 }
