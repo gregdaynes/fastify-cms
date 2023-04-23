@@ -49,22 +49,15 @@ npm run test
 
 Licensed under [The Unlicense](./LICENSE).
 
-## Todo
+## Documentation
 
-Data model ideas
+### Document
 
-- use ulid for ids, to give creation time sortable ids with `a > b` lexicographical sort
-- metadata object to capture non-content data
-  But, what then we can't query it efficiently? postgres -> jsonb. but sqlite? no.
-  the cms is not intendend to hold huge amount of content, so we can probably safely hold it in memory
-  from server start.
+A document is the storage mechanism for a page, or some form of content that 
+conforms to the [`Document` schema](./routes/documents/index.js).
 
-- [ ] Data model using documents and metadata
-- [ ] - ulidx ids for created timestamp and sorting 
-- [ ] - metadata for title, description, category, tags, path, etc
-- [ ] - data for content
-- [ ] - timestamp for deleted
-- [ ] - remove the tags table
-- [ ] - remove the categories table
-- [ ] - call items documents
-- [ ] could use lyre search for full text search if the data is able to fit in memory
+_ULID_ is used for generating ids for documents, which are sortable by creation 
+time with `a > b` lexicographical sort.
+
+The CMS is not intendend to handle a huge amount of documents, we can safely all
+documents metadata in memory.

@@ -3,6 +3,8 @@ import AutoLoad from '@fastify/autoload'
 import { join } from 'desm'
 
 export default fp(async function (fastify, opts) {
+  fastify.register(import('@fastify/sensible'))
+
   const localOpts = {
     prefix: '/cms'
   }
