@@ -19,7 +19,24 @@ const app = Fastify({
   logger: true
 })
 
+// Dummy auth and user profile, NOT FOR PRODUCTION
+app.addHook('preValidation', async (request, _reply) => {
+  if (request.query.authed) {
+    request.user = {
+      canCreate: true,
+      canUpdate: true,
+      canDelete: true
+    }
+  }
+})
+
 // Register your application as a normal plugin.
+const authenticate = async (request, _reply) => {
+  if (!request.user) {
+    throw new Error('Unauthorized')
+  }
+}
+
 app.register(appService, {
   // example overriding the metadata schema
   // adding a publishAt and author field
@@ -30,7 +47,12 @@ app.register(appService, {
   // example overriding the data schema
   // adding a teaserImage field
   Data: Schema.Data
-    .prop('teaserImage', S.string().required())
+    .prop('teaserImage', S.string().required()),
+
+  // example providing authentication functions
+  authenticateCreate: authenticate,
+  authenticateUpdate: authenticate,
+  authenticateDelete: authenticate
 })
 
 // delay is the number of milliseconds for the graceful close to finish

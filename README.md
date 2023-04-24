@@ -67,3 +67,24 @@ documents metadata in memory.
 The schemas are provided by `fluent-json-schema`, and can be extended 
 through the configuration object during plugin registration.
 
+### Hook: Authenticate
+
+Hooks for each API endpoint/method are exposed through the configuration object
+where the plugin is registered.
+
+The `authenticate*` hooks are called on each request prior to the handler function.
+
+`authenticateCreate` is called on `POST /`
+`authenticateList` is called on `GET /`
+`authenticateRead` is called on `GET /:id`
+`authenticateUpdate` is called on `PUT /:id`
+`authenticateDelete` is called on `DELETE /:id`
+
+each of the `authenticate*` hooks have a signature that matches the Fastify hook
+api. 
+    
+    ```js
+    async function authenticate (request, reply) {
+      // do something
+    }
+    ```
