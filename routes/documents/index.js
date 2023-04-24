@@ -61,14 +61,14 @@ export default async function (fastify, opts) {
       metadata.updatedAt = opts.now()
 
       if (metadata.url) {
-        const pages = request.server['fastify-cms-pages']
+        const pages = request.server['fastify-cms-pages']()
         const [documentId] = Object.entries(pages).find(([_id, { url }]) => url === metadata.url)
         if (documentId) return reply.notAcceptable()
       }
 
       await opts.documentCreate(request, { id, metadata, data }, opts)
 
-      request.server['fastify-cms-addPage'](id, metadata.url)
+      request.server['fastify-cms-addPage'](id, metadata)
 
       return await opts.documentRead(request, { id, metadata, data }, opts)
     }
@@ -99,7 +99,9 @@ export default async function (fastify, opts) {
       if (id.match(/[0-7][0-9A-HJKMNP-TV-Z]{25}/gm)) {
         existingDocument = await opts.documentRead(request, { id }, opts)
       } else {
-        const pages = request.server['fastify-cms-pages']
+        const pages = request.server['fastify-cms-pages']()
+        if (!Object.keys(pages).length) return reply.notFound()
+
         const [documentId] = Object.entries(pages).find(([_id, { slug }]) => slug === id)
         if (!documentId) return reply.notFound()
 

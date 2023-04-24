@@ -24,6 +24,7 @@ export default fp(async function (fastify, opts) {
     }
   }
 
+  // initialize pages
   const pages = documents.reduce((acc, document) => {
     const id = document.id
     const { slug, url } = document.metadata
@@ -32,9 +33,9 @@ export default fp(async function (fastify, opts) {
     return acc
   }, {})
 
-  fastify.decorate('fastify-cms-pages', pages)
-  fastify.decorate('fastify-cms-addPage', function (id, url) {
-    pages[id] = url
+  fastify.decorate('fastify-cms-pages', () => pages)
+  fastify.decorate('fastify-cms-addPage', function (id, { url, slug }) {
+    pages[id] = { url, slug }
   })
 
   fastify.get('*', function (request, reply) {
