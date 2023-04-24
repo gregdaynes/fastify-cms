@@ -14,7 +14,14 @@ export default fp(async function (fastify, opts) {
     // default schema
     Document,
     Metadata,
-    Data
+    Data,
+
+    // default authentication
+    authenticateCreate: authenticateBase('authenticateCreate'),
+    authenticateUpdate: authenticateBase('authenticateUpdate'),
+    authenticateDelete: authenticateBase('authenticateDelete'),
+    async authenticateRead (request, reply) {},
+    async authenticateList (request, reply) {}
   }
 
   const options = Object.assign(Object.assign({}, localOpts, opts))
@@ -39,4 +46,14 @@ export default fp(async function (fastify, opts) {
 
 export const Schema = {
   Document, Metadata, Data
+}
+
+function authenticateBase (name) {
+  return async function (request, reply) {
+    request.log.warn(`${name} needs to be provided. Using the default is a risk.`)
+
+    if (process.env.NODE_ENV === 'production') {
+      process.exit(1)
+    }
+  }
 }

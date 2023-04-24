@@ -40,6 +40,7 @@ export default async function (fastify, opts) {
     method: 'POST',
     url: '/',
     preHandler: [
+      opts.authenticateCreate
     ],
     schema: {
       body: documentSchema
@@ -74,6 +75,9 @@ export default async function (fastify, opts) {
   fastify.route({
     method: 'GET',
     url: '/:id',
+    preHandler: [
+      opts.authenticateRead
+    ],
     schema: {
       params: documentSchema
         .only(['id']),
@@ -95,6 +99,9 @@ export default async function (fastify, opts) {
   fastify.route({
     method: 'PUT',
     url: '/:id',
+    preHandler: [
+      opts.authenticateUpdate
+    ],
     schema: {
       params: documentSchema
         .only(['id']),
@@ -129,6 +136,9 @@ export default async function (fastify, opts) {
   fastify.route({
     method: 'GET',
     url: '/',
+    preHandler: [
+      opts.authenticateList
+    ],
     schema: {
       response: {
         200: S.array().items(
@@ -150,6 +160,9 @@ export default async function (fastify, opts) {
   fastify.route({
     method: 'DELETE',
     url: '/:id',
+    preHandler: [
+      opts.authenticateDelete
+    ],
     schema: {
       params: documentSchema
         .only(['id']),
