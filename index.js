@@ -1,5 +1,6 @@
 import fp from 'fastify-plugin'
 import AutoLoad from '@fastify/autoload'
+import Path from 'node:path'
 import { join } from 'desm'
 import _ from 'lodash'
 import { Document, Metadata, Data } from './routes/documents/index.js'
@@ -21,7 +22,10 @@ export default fp(async function (fastify, opts) {
     authenticateUpdate: authenticateBase('authenticateUpdate'),
     authenticateDelete: authenticateBase('authenticateDelete'),
     async authenticateRead (request, reply) {},
-    async authenticateList (request, reply) {}
+    async authenticateList (request, reply) {},
+
+    // default sqlite database path
+    databasePath: Path.join(process.cwd(), 'cms.db')
   }
 
   const options = Object.assign(Object.assign({}, localOpts, opts))

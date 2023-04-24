@@ -10,6 +10,7 @@ import closeWithGrace from 'close-with-grace'
 // Import your application
 import appService, { Schema } from '../index.js'
 import S from 'fluent-json-schema'
+import { join } from 'desm'
 
 // Dotenv config
 dotenv.config()
@@ -52,7 +53,9 @@ app.register(appService, {
   // example providing authentication functions
   authenticateCreate: authenticate,
   authenticateUpdate: authenticate,
-  authenticateDelete: authenticate
+  authenticateDelete: authenticate,
+
+  databasePath: join(import.meta.url, 'example.db')
 })
 
 // delay is the number of milliseconds for the graceful close to finish
