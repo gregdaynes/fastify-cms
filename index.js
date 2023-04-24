@@ -3,7 +3,18 @@ import AutoLoad from '@fastify/autoload'
 import Path from 'node:path'
 import { join } from 'desm'
 import _ from 'lodash'
-import { Document, Metadata, Data } from './routes/documents/index.js'
+import {
+  Document,
+  Metadata,
+  Data,
+  documentCreate,
+  documentRead,
+  documentUpdate,
+  documentList,
+  documentDelete,
+  parseDocument,
+  now
+} from './routes/documents/index.js'
 
 export default fp(async function (fastify, opts) {
   fastify.register(import('@fastify/sensible'))
@@ -25,7 +36,23 @@ export default fp(async function (fastify, opts) {
     async authenticateList (request, reply) {},
 
     // default sqlite database path
-    databasePath: Path.join(process.cwd(), 'cms.db')
+    databasePath: Path.join(process.cwd(), 'cms.db'),
+
+    // document database functions
+    documentCreate,
+    documentRead,
+    documentUpdate,
+    documentList,
+    documentDelete,
+
+    // utility functions
+    parseDocument,
+    now
+  }
+
+  const methods = _.compact(_.pick(opts, ['documentCreate', 'documentRead', 'documentUpdate', 'documentList', 'documentDelete']))
+  if (methods.length) {
+    opts.skipDatabase = true
   }
 
   const options = Object.assign(Object.assign({}, localOpts, opts))
