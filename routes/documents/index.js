@@ -55,19 +55,16 @@ export default async function (fastify, opts) {
       }
     },
     handler: async (request, reply) => {
-      const db = request.server['fastify-cms-database']
-
       const id = fastify['fastify-cms-ulid']()
       const { metadata, data } = request.body
       metadata.slug = slugify(metadata.title)
-      metadata.updatedAt = now()
+      metadata.updatedAt = opts.now()
 
-      const stmt = db.prepare('INSERT INTO documents (id, metadata, data) VALUES (?, ?, ?)')
-      stmt.run(id, JSON.stringify(metadata), JSON.stringify(data))
+      await opts.documentCreate(request, { id, metadata, data }, opts)
 
       request.server['fastify-cms-addPage'](id, metadata.url)
 
-      return fetchDocumentById(id)
+      return await opts.documentRead(request, { id, metadata, data }, opts)
     }
   })
 
@@ -88,7 +85,7 @@ export default async function (fastify, opts) {
     handler: async (request, reply) => {
       const { id } = request.params
 
-      const existingDocument = fetchDocumentById(id)
+      const existingDocument = await opts.documentRead(request, { id }, opts)
       if (!existingDocument) return reply.notFound()
 
       return existingDocument
@@ -116,19 +113,21 @@ export default async function (fastify, opts) {
       }
     },
     handler: async (request, reply) => {
-      const db = request.server['fastify-cms-database']
       const { id } = request.params
 
-      const existingDocument = fetchDocumentById(id)
+      const existingDocument = await opts.documentRead(request, { id }, opts)
       if (!existingDocument) return reply.notFound()
 
       const updatedDocument = _.merge(existingDocument, request.body)
-      updatedDocument.metadata.updatedAt = now()
+      updatedDocument.metadata.updatedAt = opts.now()
 
-      const stmt = db.prepare('UPDATE documents SET metadata = ?, data = ? WHERE id = ?')
-      stmt.run(JSON.stringify(updatedDocument.metadata), JSON.stringify(updatedDocument.data), updatedDocument.id)
+      await opts.documentUpdate(request, {
+        id,
+        metadata: updatedDocument.metadata,
+        data: updatedDocument.data
+      }, opts)
 
-      return fetchDocumentById(id)
+      return await opts.documentRead(request, { id }, opts)
     }
   })
 
@@ -147,12 +146,7 @@ export default async function (fastify, opts) {
       }
     },
     handler: async (request, reply) => {
-      const db = request.server['fastify-cms-database']
-
-      const stmt = db.prepare('SELECT * FROM documents WHERE deleted_at IS NULL')
-      const documents = stmt.all()
-
-      return documents.map(document => parseDocument(document))
+      return await opts.documentList(request, {}, opts)
     }
   })
 
@@ -171,39 +165,67 @@ export default async function (fastify, opts) {
       }
     },
     handler: async (request, reply) => {
-      const db = request.server['fastify-cms-database']
       const { id } = request.params
 
-      const timestamp = now()
+      const timestamp = opts.now()
 
-      const existingDocument = fetchDocumentById(id)
+      const existingDocument = await opts.documentRead(request, { id }, opts)
       if (!existingDocument) return reply.notFound()
 
-      const { metadata } = _.merge(existingDocument, { metadata: { updatedAt: timestamp } })
+      const { metadata, data } = _.merge(existingDocument, { metadata: { updatedAt: timestamp } })
 
-      const stmt = db.prepare('UPDATE documents SET deleted_at = ? WHERE id = ?')
-      console.log({ metadata, timestamp, id })
-      stmt.run(timestamp, id)
+      await opts.documentDelete(request, { id, metadata, data, timestamp }, opts)
     }
   })
+}
 
-  function fetchDocumentById (id, includeDeleted = false) {
-    const db = fastify['fastify-cms-database']
-    const data = db.prepare('SELECT * FROM documents WHERE id = ? AND deleted_at IS NULL LIMIT 1').get(id)
-    if (!data) return
+export async function documentCreate (request, { id, metadata, data }, opts) {
+  const db = request.server['fastify-cms-database']
 
-    return parseDocument(data)
+  return db.prepare('INSERT INTO documents (id, metadata, data) VALUES (?, ?, ?)')
+    .run(id, JSON.stringify(metadata), JSON.stringify(data))
+}
+
+export async function documentRead (request, { id, metadata, data }, opts) {
+  const db = request.server['fastify-cms-database']
+
+  const document = db.prepare('SELECT * FROM documents WHERE id = ? AND deleted_at IS NULL LIMIT 1').get(id)
+  if (!document) return
+
+  return opts.parseDocument(request, document)
+}
+
+export async function documentList (request, { id, metadata, data }, opts) {
+  const db = request.server['fastify-cms-database']
+
+  const documents = db.prepare('SELECT * FROM documents WHERE deleted_at IS NULL')
+    .all()
+
+  return documents.map(document => opts.parseDocument(request, document))
+}
+
+export async function documentUpdate (request, { id, metadata, data }, opts) {
+  const db = request.server['fastify-cms-database']
+
+  return db.prepare('UPDATE documents SET metadata = ?, data = ? WHERE id = ?')
+    .run(JSON.stringify(metadata), JSON.stringify(data), id)
+}
+
+export async function documentDelete (request, { id, metadata, data, timestamp }, opts) {
+  const db = request.server['fastify-cms-database']
+
+  return await db.prepare('UPDATE documents SET deleted_at = ? WHERE id = ?')
+    .run(timestamp, id)
+}
+
+export function parseDocument (request, document) {
+  return {
+    ...document,
+    metadata: JSON.parse(document.metadata),
+    data: JSON.parse(document.data)
   }
+}
 
-  function parseDocument (document) {
-    return {
-      ...document,
-      metadata: JSON.parse(document.metadata),
-      data: JSON.parse(document.data)
-    }
-  }
-
-  function now () {
-    return new Date().toISOString()
-  }
+export function now () {
+  return new Date().toISOString()
 }

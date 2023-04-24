@@ -4,6 +4,8 @@ import { monotonicFactory as ulid } from 'ulidx'
 
 export default fp(async function (fastify, opts) {
   // initialize database
+  if (opts.skipDatabase === true) return
+
   const db = new Database(opts.databasePath)
 
   fastify.decorate('fastify-cms-database', db)

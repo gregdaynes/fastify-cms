@@ -88,3 +88,40 @@ api.
       // do something
     }
     ```
+
+### Document Store Functions
+
+The document store functions are exposed through the configuration object where
+the plugin is registered. 
+
+The `document*` methods specific to each operation, follow the same API 
+
+    ```js
+    async function documentCreate (request, { id, metadata, data }, opts) {
+      // do something
+    }
+    ```
+
+`POST /` calls `documentCreate` then `documentRead` on the new `id`
+`GET /` calls `documentList`
+`GET /:id` calls `documentRead` with the `id` parameter
+`PUT /:id` calls `documentUpdate` then `documentRead` with the `id` parameter
+`DELETE /:id` calls `documentDelete` with the `id` parameter
+
+> **Note**
+> The function `documentRead` only receives `id`
+> The function `documentDelete` receives an extra `timestamp` parameter with the `id`, `metadata`, and `data`
+
+> **Note**
+> If one `document*` override function is provided, all must be provided
+
+### Document Parsing
+
+A parsing function is exposed to allow customization of the parsing of the 
+document.
+
+    ```js
+    async function parseDocument (request, document) {
+        // do something
+    }
+    ```
