@@ -76,8 +76,11 @@ export default async function (fastify, opts) {
       opts.authenticateRead
     ],
     schema: {
-      params: documentSchema
-        .only(['id']),
+      params: S.object()
+        .prop('id', S.anyOf([
+          S.string().pattern(/[0-7][0-9A-HJKMNP-TV-Z]{25}/gm),
+          S.string().minLength(1)
+        ])),
       response: {
         200: documentSchema
       }
@@ -85,9 +88,19 @@ export default async function (fastify, opts) {
     handler: async (request, reply) => {
       const { id } = request.params
 
-      const existingDocument = await opts.documentRead(request, { id }, opts)
-      if (!existingDocument) return reply.notFound()
+      let existingDocument
 
+      if (id.match(/[0-7][0-9A-HJKMNP-TV-Z]{25}/gm)) {
+        existingDocument = await opts.documentRead(request, { id }, opts)
+      } else {
+        const pages = request.server['fastify-cms-pages']
+        const [documentId] = Object.entries(pages).find(([_id, { slug }]) => slug === id)
+        if (!documentId) return reply.notFound()
+
+        existingDocument = await opts.documentRead(request, { id: documentId }, opts)
+      }
+
+      if (!existingDocument) return reply.notFound()
       return existingDocument
     }
   })
