@@ -2,28 +2,27 @@ import S from 'fluent-json-schema'
 import slugify from 'slugify'
 import _ from 'lodash'
 
+export const Metadata = S.object()
+  .id('#metadata')
+  .prop('name', S.string().required())
+  .prop('title', S.string().required())
+  .prop('slug', S.string().required())
+  .prop('description', S.string().required())
+  .prop('keywords', S.array().items(S.anyOf([S.null(), S.string()])).required().default([]))
+  .prop('url', S.string())
+  .prop('updatedAt', S.string().format('date-time'))
+
+export const Data = S.object()
+  .id('#data')
+  .prop('contentType', S.string().required())
+  .prop('content', S.string().required())
+
 export const Document = S.object()
   .id('#document')
   .title('Document')
   .description('document with metadata and data')
-
-  .definition('metadata', S.object()
-    .id('#metadata')
-    .prop('name', S.string().required())
-    .prop('title', S.string().required())
-    .prop('slug', S.string().required())
-    .prop('description', S.string().required())
-    .prop('keywords', S.array().items(S.anyOf([S.null(), S.string()])).required().default([]))
-    .prop('url', S.string())
-    .prop('updatedAt', S.string().format('date-time'))
-  )
-
-  .definition('data', S.object()
-    .id('#data')
-    .prop('contentType', S.string().required())
-    .prop('content', S.string().required())
-  )
-
+  .definition('metadata', Metadata)
+  .definition('data', Data)
   .prop('id', S.string().pattern(/[0-7][0-9A-HJKMNP-TV-Z]{25}/gm).required())
   .prop('metadata', S.ref('#metadata').required())
   .prop('data', S.ref('#data').required())
@@ -32,19 +31,25 @@ export const Document = S.object()
 export const autoPrefix = '/documents'
 
 export default async function (fastify, opts) {
+  const documentSchema = opts.Document
+    .definition('metadata', opts.Metadata)
+    .definition('data', opts.Data)
+
   // create item
   fastify.route({
     method: 'POST',
     url: '/',
+    preHandler: [
+    ],
     schema: {
-      body: Document
+      body: documentSchema
         .only([
           'metadata.name',
           'metadata.title',
           'data'
         ]),
       response: {
-        200: Document
+        200: documentSchema
           .without(['deletedAt'])
       }
     },
@@ -70,10 +75,10 @@ export default async function (fastify, opts) {
     method: 'GET',
     url: '/:id',
     schema: {
-      params: Document
+      params: documentSchema
         .only(['id']),
       response: {
-        200: Document
+        200: documentSchema
       }
     },
     handler: async (request, reply) => {
@@ -91,16 +96,16 @@ export default async function (fastify, opts) {
     method: 'PUT',
     url: '/:id',
     schema: {
-      params: Document
+      params: documentSchema
         .only(['id']),
-      body: Document
+      body: documentSchema
         .only([
           'metadata.name',
           'metadata.title',
           'data'
         ]),
       response: {
-        200: Document
+        200: documentSchema
       }
     },
     handler: async (request, reply) => {
@@ -127,7 +132,7 @@ export default async function (fastify, opts) {
     schema: {
       response: {
         200: S.array().items(
-          Document
+          documentSchema
         )
       }
     },
@@ -146,7 +151,7 @@ export default async function (fastify, opts) {
     method: 'DELETE',
     url: '/:id',
     schema: {
-      params: Document
+      params: documentSchema
         .only(['id']),
       response: {
         200: S.null()

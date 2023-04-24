@@ -8,7 +8,8 @@ import Fastify from 'fastify'
 import closeWithGrace from 'close-with-grace'
 
 // Import your application
-import appService from '../index.js'
+import appService, { Schema } from '../index.js'
+import S from 'fluent-json-schema'
 
 // Dotenv config
 dotenv.config()
@@ -19,7 +20,18 @@ const app = Fastify({
 })
 
 // Register your application as a normal plugin.
-app.register(appService)
+app.register(appService, {
+  // example overriding the metadata schema
+  // adding a publishAt and author field
+  Metadata: Schema.Metadata
+    .prop('publishAt', S.string().format('date-time'))
+    .prop('author', S.string().required()),
+
+  // example overriding the data schema
+  // adding a teaserImage field
+  Data: Schema.Data
+    .prop('teaserImage', S.string().required())
+})
 
 // delay is the number of milliseconds for the graceful close to finish
 const closeListeners = closeWithGrace({ delay: process.env.FASTIFY_CLOSE_GRACE_DELAY || 500 }, async function ({ signal, err, manual }) {

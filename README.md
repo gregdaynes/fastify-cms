@@ -61,3 +61,9 @@ time with `a > b` lexicographical sort.
 
 The CMS is not intendend to handle a huge amount of documents, we can safely all
 documents metadata in memory.
+
+### Schema
+
+The schemas are provided by `fluent-json-schema`, and can be extended 
+through the configuration object during plugin registration.
+
