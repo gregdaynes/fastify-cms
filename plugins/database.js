@@ -31,3 +31,42 @@ export default fp(async function (fastify, opts) {
   name: 'fastify-cms-db',
   dependencies: []
 })
+
+export async function documentCreate (request, { id, metadata, data }, opts) {
+  const db = request.server['fastify-cms-database']
+
+  return db.prepare('INSERT INTO documents (id, metadata, data) VALUES (?, ?, ?)')
+    .run(id, JSON.stringify(metadata), JSON.stringify(data))
+}
+
+export async function documentRead (request, { id, metadata, data }, opts) {
+  const db = request.server['fastify-cms-database']
+
+  const document = db.prepare('SELECT * FROM documents WHERE id = ? AND deleted_at IS NULL LIMIT 1').get(id)
+  if (!document) return
+
+  return opts.parseDocument(request, document)
+}
+
+export async function documentList (request, { id, metadata, data }, opts) {
+  const db = request.server['fastify-cms-database']
+
+  const documents = db.prepare('SELECT * FROM documents WHERE deleted_at IS NULL')
+    .all()
+
+  return documents.map(document => opts.parseDocument(request, document))
+}
+
+export async function documentUpdate (request, { id, metadata, data }, opts) {
+  const db = request.server['fastify-cms-database']
+
+  return db.prepare('UPDATE documents SET metadata = ?, data = ? WHERE id = ?')
+    .run(JSON.stringify(metadata), JSON.stringify(data), id)
+}
+
+export async function documentDelete (request, { id, metadata, data, timestamp }, opts) {
+  const db = request.server['fastify-cms-database']
+
+  return await db.prepare('UPDATE documents SET deleted_at = ? WHERE id = ?')
+    .run(timestamp, id)
+}

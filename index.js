@@ -7,14 +7,16 @@ import {
   Document,
   Metadata,
   Data,
+  parseDocument,
+  now
+} from './routes/documents/index.js'
+import {
   documentCreate,
   documentRead,
   documentUpdate,
   documentList,
-  documentDelete,
-  parseDocument,
-  now
-} from './routes/documents/index.js'
+  documentDelete
+} from './plugins/database.js'
 
 export default fp(async function (fastify, opts) {
   fastify.register(import('@fastify/sensible'))
