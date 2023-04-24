@@ -3,10 +3,14 @@ import fp from 'fastify-plugin'
 export default fp(async function (fastify, opts) {
   const db = fastify['fastify-cms-database']
 
-  const stmt = db.prepare('SELECT id, json_extract(metadata, \'$.url\') AS url FROM documents WHERE deleted_at IS NULL AND json_extract(metadata, \'$.url\') IS NOT NULL')
-  const documents = stmt.all()
+  const documents = await opts.documentList({ server: { 'fastify-cms-database': db } }, {}, opts)
 
-  for (const { id, url } of documents) {
+  for (const document of documents) {
+    const id = document.id
+    const url = document.metadata.url
+
+    if (!url) continue
+
     try {
       fastify.route({
         method: 'GET',
@@ -20,8 +24,11 @@ export default fp(async function (fastify, opts) {
     }
   }
 
-  const pages = documents.reduce((acc, { id, url }) => {
-    acc[id] = url
+  const pages = documents.reduce((acc, document) => {
+    const id = document.id
+    const { slug, url } = document.metadata
+
+    acc[id] = { url, slug }
     return acc
   }, {})
 
@@ -38,26 +45,14 @@ export default fp(async function (fastify, opts) {
 
     return handler(id, request, reply)
   })
+
+  async function handler (id, request, reply) {
+    const document = await opts.documentRead(request, { id }, opts)
+    if (!document) return reply.notFound()
+
+    return document
+  }
 }, {
   name: 'fastify-cms-document-routes',
   dependencies: ['fastify-cms-db']
 })
-
-function handler (id, request, reply) {
-  const db = request.server['fastify-cms-database']
-
-  const stmt = db.prepare('SELECT * FROM documents WHERE id = ? AND deleted_at IS NULL')
-  const document = stmt.get(id)
-
-  if (!document) return reply.notFound()
-
-  return parseDocument(document)
-}
-
-function parseDocument (document) {
-  return {
-    ...document,
-    metadata: JSON.parse(document.metadata),
-    data: JSON.parse(document.data)
-  }
-}
