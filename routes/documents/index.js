@@ -57,8 +57,14 @@ export default async function (fastify, opts) {
     handler: async (request, reply) => {
       const id = fastify['fastify-cms-ulid']()
       const { metadata, data } = request.body
-      metadata.slug = slugify(metadata.title)
+      metadata.slug = metadata.slug || slugify(metadata.title)
       metadata.updatedAt = opts.now()
+
+      if (metadata.url) {
+        const pages = request.server['fastify-cms-pages']
+        const [documentId] = Object.entries(pages).find(([_id, { url }]) => url === metadata.url)
+        if (documentId) return reply.notAcceptable()
+      }
 
       await opts.documentCreate(request, { id, metadata, data }, opts)
 

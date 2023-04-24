@@ -20,7 +20,7 @@ export default fp(async function (fastify, opts) {
     } catch (err) {
       if (err.code !== 'FST_ERR_DUPLICATED_ROUTE') throw err
 
-      fastify.log.warn({ id, url }, 'Duplicate of loaded route found.')
+      fastify.log.warn({ id, url }, 'Duplicate of route found')
     }
   }
 
